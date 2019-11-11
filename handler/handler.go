@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -25,18 +26,24 @@ func (h *Handler) RetrievePayload(c echo.Context) error {
 	err := json.Unmarshal(jsonByte, &payloadResult)
 
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"message":       "failed",
-			"error_message": "Can't read JSON body",
+		return c.JSON(http.StatusBadRequest, models.GenericResponse{
+			Header: &models.GenericResponseHeader{
+				Status:   "failed",
+				Messages: []string{"Can't read JSON body"},
+			},
+			Error: err,
 		})
 	}
 
 	// TODO: nanti diolah
 	payload, ok := payloadResult["payloads"].(map[string]interface{})
 	if !ok {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
-			"message":       "failed",
-			"error_message": "Can't read payloads data",
+		return c.JSON(http.StatusBadRequest, models.GenericResponse{
+			Header: &models.GenericResponseHeader{
+				Status:   "failed",
+				Messages: []string{"Can't parse payload data"},
+			},
+			Error: errors.New("Can't parse payload data"),
 		})
 	}
 
