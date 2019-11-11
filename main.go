@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/99ridho/metrickit-backend/db"
 	"github.com/jmoiron/sqlx"
+	"github.com/labstack/echo/middleware"
 	"github.com/spf13/viper"
 
 	"github.com/99ridho/metrickit-backend/handler"
@@ -19,12 +20,18 @@ func main() {
 	fmt.Println("Server starting...")
 
 	router := echo.New()
-	handler := &handler.Handler{}
+	httpHandler := &handler.Handler{}
 
-	router.GET("/hello", handler.Hello)
-	router.POST("/payload", handler.RetrievePayload)
+	router.Use(middleware.Logger(), middleware.Recover())
 
-	router.Start(":8185")
+	router.GET("/hello", httpHandler.Hello)
+	router.POST("/payload", httpHandler.RetrievePayload)
+
+	err := router.Start(":8185")
+
+	if err != nil {
+		fmt.Println("Can't start server")
+	}
 }
 
 func loadConfigurationFile() {
