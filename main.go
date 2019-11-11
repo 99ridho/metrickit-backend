@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/99ridho/metrickit-backend/db"
 	"github.com/jmoiron/sqlx"
-	"github.com/labstack/echo/middleware"
 	"github.com/spf13/viper"
 
 	"github.com/99ridho/metrickit-backend/handler"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
 var database *sqlx.DB
@@ -24,7 +25,6 @@ func main() {
 
 	router.Use(middleware.Logger(), middleware.Recover())
 
-	router.GET("/hello", httpHandler.Hello)
 	router.POST("/payload", httpHandler.RetrievePayload)
 
 	err := router.Start(":8185")

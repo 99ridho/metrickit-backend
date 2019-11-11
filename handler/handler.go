@@ -12,15 +12,6 @@ import (
 type Handler struct {
 }
 
-func (h *Handler) Hello(c echo.Context) error {
-	return c.JSON(200, map[string]interface{}{
-		"message": "success",
-		"data": map[string]interface{}{
-			"greeting": "hello world",
-		},
-	})
-}
-
 func (h *Handler) RetrievePayload(c echo.Context) error {
 	var payloadResult map[string]interface{}
 
