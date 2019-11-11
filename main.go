@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/99ridho/metrickit-backend/db"
+	"github.com/99ridho/metrickit-backend/services"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
 
@@ -21,7 +22,9 @@ func main() {
 	fmt.Println("Server starting...")
 
 	router := echo.New()
-	httpHandler := &handler.Handler{}
+	httpHandler := &handler.Handler{
+		LaunchMetricService: services.NewLaunchMetricService(database),
+	}
 
 	router.Use(middleware.Logger(), middleware.Recover())
 

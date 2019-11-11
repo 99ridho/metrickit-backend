@@ -1,18 +1,20 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strconv"
 
 	"github.com/99ridho/metrickit-backend/models"
+	"github.com/99ridho/metrickit-backend/services"
 	"github.com/labstack/echo"
 )
 
 type Handler struct {
+	LaunchMetricService services.LaunchMetricService
 }
 
 func (h *Handler) RetrievePayload(c echo.Context) error {
@@ -38,12 +40,46 @@ func (h *Handler) RetrievePayload(c echo.Context) error {
 		})
 	}
 
-	fmt.Println(h.extractAppLaunchMetricsTimeToFirstDrawKey(payload))
+	metadata := h.extractMetadata(payload)
+	appLaunchMetricsFirstDrawKey := h.extractAppLaunchMetricsTimeToFirstDrawKey(payload)
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
-		"message": "success",
-		"data":    map[string]interface{}{},
+	ctx := c.Request().Context()
+	if ctx != nil {
+		ctx = context.Background()
+	}
+
+	ids, err := h.LaunchMetricService.Store(ctx, appLaunchMetricsFirstDrawKey, metadata)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, models.GenericResponse{
+			Header: &models.GenericResponseHeader{
+				Status:   "failed",
+				Messages: []string{err.Error()},
+			},
+			Error: err,
+		})
+	}
+
+	return c.JSON(http.StatusOK, models.GenericResponse{
+		Header: &models.GenericResponseHeader{
+			Status:   "success",
+			Messages: []string{},
+		},
+		Data: ids,
 	})
+}
+
+func (h *Handler) extractMetadata(payloads map[string]interface{}) *models.AppMetadata {
+	metadata := payloads["metaData"].(map[string]interface{})
+	version := payloads["appVersion"].(string)
+
+	return &models.AppMetadata{
+		ID:          0,
+		Version:     version,
+		BuildNumber: metadata["appBuildVersion"].(string),
+		DeviceType:  metadata["deviceType"].(string),
+		OSVersion:   metadata["osVersion"].(string),
+	}
 }
 
 func (h *Handler) extractAppLaunchMetricsTimeToFirstDrawKey(payloads map[string]interface{}) []*models.AppLaunchTime {
