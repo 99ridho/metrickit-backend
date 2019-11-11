@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 
+	database "github.com/99ridho/metrickit-backend/db"
 	"github.com/99ridho/metrickit-backend/models"
 	"github.com/jmoiron/sqlx"
 )
@@ -12,40 +13,64 @@ type LaunchMetricService interface {
 }
 
 type LaunchMetricServiceImpl struct {
-	db *sqlx.DB
+	db                *sqlx.DB
+	transactionHelper *database.TransactionHelper
 }
 
 func NewLaunchMetricService(db *sqlx.DB) *LaunchMetricServiceImpl {
 	return &LaunchMetricServiceImpl{
 		db: db,
+		transactionHelper: &database.TransactionHelper{
+			DB: db,
+		},
 	}
 }
 
 func (svc *LaunchMetricServiceImpl) Store(ctx context.Context, launchTimes []*models.AppLaunchTime, metadata *models.AppMetadata) ([]int64, error) {
-	metadataID, err := svc.checkMetadataIfExist(ctx, metadata)
+	existMetadataID, err := svc.checkMetadataIfExist(ctx, metadata)
 
 	if err != nil {
 		return []int64{}, err
 	}
 
-	query := `INSERT INTO app_launch_time_first_draw (metadata_id, range_start, range_end, frequency) VALUES (?,?,?,?)`
+	ids := make([]int64, 0)
 
-	if metadataID != 0 {
-		ids := make([]int64, 0)
+	err = svc.transactionHelper.DoTransaction(ctx, func(tx *sqlx.Tx) error {
+		var metadataID int64
+		if existMetadataID != 0 {
+			metadataID = existMetadataID
+		} else {
+			metadataInsertQuery := `INSERT INTO metadata (version, build_number, device_type, os) VALUES (?,?,?,?)`
 
+			stmt, err := tx.PreparexContext(ctx, metadataInsertQuery)
+
+			if err != nil {
+				return err
+			}
+
+			result, err := stmt.ExecContext(ctx, metadata.Version, metadata.BuildNumber, metadata.DeviceType, metadata.OSVersion)
+
+			if err != nil {
+				return err
+			}
+
+			metadataID, _ = result.LastInsertId()
+		}
+
+		appLaunchInsertQuery := `INSERT INTO app_launch_time_first_draw (metadata_id, range_start, range_end, frequency) VALUES (?,?,?,?)`
 		for _, launchTime := range launchTimes {
 			launchTime.MetadataID = metadataID
 
-			stmt, err := svc.db.PreparexContext(ctx, query)
+			stmt, err := tx.PreparexContext(ctx, appLaunchInsertQuery)
 
 			if err != nil {
-				return []int64{}, err
+				return err
 			}
 
 			result, err := stmt.ExecContext(ctx, launchTime.MetadataID, launchTime.RangeStart, launchTime.RangeEnd, launchTime.Frequency)
 
 			if err != nil {
-				return []int64{}, err
+				return err
 			}
 
 			lastID, _ := result.LastInsertId()
@@ -53,63 +78,10 @@ func (svc *LaunchMetricServiceImpl) Store(ctx context.Context, launchTimes []*mo
 			ids = append(ids, lastID)
 		}
 
-		return ids, nil
-	}
-
-	// if no metadata inserted, do transaction to insert both metadata and respective metrics
-	tx, err := svc.db.BeginTxx(ctx, nil)
+		return nil
+	})
 
 	if err != nil {
-		tx.Rollback()
-		return []int64{}, err
-	}
-
-	// insert metadata
-	metadataInsertQuery := `INSERT INTO metadata (version, build_number, device_type, os) VALUES (?,?,?,?)`
-
-	stmt, err := tx.PreparexContext(ctx, metadataInsertQuery)
-
-	if err != nil {
-		tx.Rollback()
-		return []int64{}, err
-	}
-
-	result, err := stmt.ExecContext(ctx, metadata.Version, metadata.BuildNumber, metadata.DeviceType, metadata.OSVersion)
-
-	if err != nil {
-		tx.Rollback()
-		return []int64{}, err
-	}
-
-	lastMetadataInsertID, _ := result.LastInsertId()
-
-	ids := make([]int64, 0)
-	for _, launchTime := range launchTimes {
-		launchTime.MetadataID = lastMetadataInsertID
-
-		stmt, err := tx.PreparexContext(ctx, query)
-
-		if err != nil {
-			tx.Rollback()
-			return []int64{}, err
-		}
-
-		result, err := stmt.ExecContext(ctx, launchTime.MetadataID, launchTime.RangeStart, launchTime.RangeEnd, launchTime.Frequency)
-
-		if err != nil {
-			tx.Rollback()
-			return []int64{}, err
-		}
-
-		lastID, _ := result.LastInsertId()
-
-		ids = append(ids, lastID)
-	}
-
-	err = tx.Commit()
-
-	if err != nil {
-		tx.Rollback()
 		return []int64{}, err
 	}
 
