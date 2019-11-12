@@ -48,14 +48,14 @@ func (h *Handler) RetrievePayload(c echo.Context) error {
 	}
 
 	metadata := h.extractMetadata(payload)
-	appLaunchMetricsFirstDrawKey := h.extractAppLaunchMetricsTimeToFirstDrawKey(payload)
+	appLaunchMetricsFirstDrawKey := h.extractAppLaunchMetrics("histogrammedTimeToFirstDrawKey", payload)
 
 	ctx := c.Request().Context()
 	if ctx != nil {
 		ctx = context.Background()
 	}
 
-	ids, err := h.LaunchMetricService.Store(ctx, appLaunchMetricsFirstDrawKey, metadata)
+	ids, err := h.LaunchMetricService.Store(ctx, services.LaunchTypeColdStart, appLaunchMetricsFirstDrawKey, metadata)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, models.GenericResponse{
@@ -89,10 +89,10 @@ func (h *Handler) extractMetadata(payloads map[string]interface{}) *models.AppMe
 	}
 }
 
-func (h *Handler) extractAppLaunchMetricsTimeToFirstDrawKey(payloads map[string]interface{}) []*models.AppLaunchTime {
+func (h *Handler) extractAppLaunchMetrics(key string, payloads map[string]interface{}) []*models.AppLaunchTime {
 	appLaunchMetrics := payloads["applicationLaunchMetrics"].(map[string]interface{})
-	histogrammedTimeToFirstDrawKey := appLaunchMetrics["histogrammedTimeToFirstDrawKey"].(map[string]interface{})
-	histogramValues := histogrammedTimeToFirstDrawKey["histogramValue"].(map[string]interface{})
+	histogrammedTime := appLaunchMetrics[key].(map[string]interface{})
+	histogramValues := histogrammedTime["histogramValue"].(map[string]interface{})
 
 	metrics := make([]*models.AppLaunchTime, 0)
 	for i := 0; i < len(histogramValues); i++ {

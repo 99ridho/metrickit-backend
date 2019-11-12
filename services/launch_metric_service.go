@@ -8,8 +8,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+type LaunchType int
+
+const (
+	LaunchTypeColdStart LaunchType = iota
+	LaunchTypeResumeFromBackground
+)
+
 type LaunchMetricService interface {
-	Store(ctx context.Context, launchTimes []*models.AppLaunchTime, metadata *models.AppMetadata) ([]int64, error)
+	Store(ctx context.Context, launchType LaunchType, launchTimes []*models.AppLaunchTime, metadata *models.AppMetadata) ([]int64, error)
 }
 
 type LaunchMetricServiceImpl struct {
@@ -26,7 +33,7 @@ func NewLaunchMetricService(db *sqlx.DB) *LaunchMetricServiceImpl {
 	}
 }
 
-func (svc *LaunchMetricServiceImpl) Store(ctx context.Context, launchTimes []*models.AppLaunchTime, metadata *models.AppMetadata) ([]int64, error) {
+func (svc *LaunchMetricServiceImpl) Store(ctx context.Context, launchType LaunchType, launchTimes []*models.AppLaunchTime, metadata *models.AppMetadata) ([]int64, error) {
 	existMetadataID, err := svc.checkMetadataIfExist(ctx, metadata)
 
 	if err != nil {
@@ -57,7 +64,14 @@ func (svc *LaunchMetricServiceImpl) Store(ctx context.Context, launchTimes []*mo
 			metadataID, _ = result.LastInsertId()
 		}
 
-		appLaunchInsertQuery := `INSERT INTO app_launch_time_first_draw (metadata_id, range_start, range_end, frequency) VALUES (?,?,?,?)`
+		var appLaunchInsertQuery string
+		switch launchType {
+		case LaunchTypeColdStart:
+			appLaunchInsertQuery = `INSERT INTO app_launch_time_first_draw (metadata_id, range_start, range_end, frequency) VALUES (?,?,?,?)`
+		case LaunchTypeResumeFromBackground:
+			appLaunchInsertQuery = `INSERT INTO app_launch_time_resume (metadata_id, range_start, range_end, frequency) VALUES (?,?,?,?)`
+		}
+
 		for _, launchTime := range launchTimes {
 			launchTime.MetadataID = metadataID
 
