@@ -3,9 +3,156 @@ package services
 import (
 	"context"
 
+	database "github.com/99ridho/metrickit-backend/db"
 	"github.com/99ridho/metrickit-backend/models"
+	"github.com/jmoiron/sqlx"
 )
 
 type SignpostService interface {
 	Store(ctx context.Context, signpost *models.AppSignpost, metadata *models.AppMetadata) (int64, error)
+}
+
+type SignpostServiceImpl struct {
+	db                   *sqlx.DB
+	transactionHelper    *database.TransactionHelper
+	checkMetadataService CheckMetadataService
+}
+
+func NewSignpostService(db *sqlx.DB) *SignpostServiceImpl {
+	return &SignpostServiceImpl{
+		db: db,
+		transactionHelper: &database.TransactionHelper{
+			DB: db,
+		},
+		checkMetadataService: NewCheckMetadataService(db),
+	}
+}
+
+func (svc *SignpostServiceImpl) Store(ctx context.Context, signpost *models.AppSignpost, metadata *models.AppMetadata) (int64, error) {
+	existMetadataID, err := svc.checkMetadataService.CheckMetadataIfExist(ctx, metadata)
+
+	if err != nil {
+		return 0, err
+	}
+
+	var insertedSignpostID int64
+
+	err = svc.transactionHelper.DoTransaction(ctx, func(tx *sqlx.Tx) error {
+		var metadataID int64
+		if existMetadataID != 0 {
+			metadataID = existMetadataID
+		} else {
+			metadataInsertQuery := `INSERT INTO metadata (version, build_number, device_type, os) VALUES (?,?,?,?)`
+
+			stmt, err := tx.PreparexContext(ctx, metadataInsertQuery)
+
+			if err != nil {
+				return err
+			}
+
+			result, err := stmt.ExecContext(ctx, metadata.Version, metadata.BuildNumber, metadata.DeviceType, metadata.OSVersion)
+
+			if err != nil {
+				return err
+			}
+
+			metadataID, _ = result.LastInsertId()
+		}
+
+		signpost.MetadataID = metadataID
+
+		signpostID, err := svc.insertSignpost(ctx, tx, signpost)
+
+		if err != nil {
+			return err
+		}
+
+		insertedSignpostID = signpostID
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	return insertedSignpostID, nil
+}
+
+func (svc *SignpostServiceImpl) insertSignpost(ctx context.Context, tx *sqlx.Tx, signpost *models.AppSignpost) (int64, error) {
+	signpostInsertQuery := "INSERT INTO app_signpost (metadata_id, name, category) VALUES (?,?,?)"
+
+	stmt, err := tx.PreparexContext(ctx, signpostInsertQuery)
+
+	if err != nil {
+		return 0, err
+	}
+
+	signpostInsertResult, err := stmt.ExecContext(ctx, signpost.MetadataID, signpost.Name, signpost.Category)
+
+	if err != nil {
+		return 0, err
+	}
+
+	signpostID, _ := signpostInsertResult.LastInsertId()
+
+	signpost.SignpostInterval.SignpostID = signpostID
+
+	err = svc.insertSignpostInterval(ctx, tx, signpost)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return signpostID, nil
+}
+
+func (svc *SignpostServiceImpl) insertSignpostInterval(ctx context.Context, tx *sqlx.Tx, signpost *models.AppSignpost) error {
+	signpostIntervalQuery := "INSERT INTO app_signpost_interval (signpost_id, average_memory, cumulative_cpu_time, cumulative_logical_writes) VALUES (?,?,?,?)"
+
+	stmt, err := tx.PreparexContext(ctx, signpostIntervalQuery)
+
+	if err != nil {
+		return err
+	}
+
+	signpostIntervalResult, err := stmt.ExecContext(
+		ctx,
+		signpost.SignpostInterval.SignpostID,
+		signpost.SignpostInterval.AverageMemory,
+		signpost.SignpostInterval.CumulativeCPUTime,
+		signpost.SignpostInterval.CumulativeLogicalWrites,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	signpostIntervalID, _ := signpostIntervalResult.LastInsertId()
+
+	signpost.SignpostInterval.SignpostHistogram.SignpostIntervalID = signpostIntervalID
+
+	for _, histogramValue := range signpost.SignpostInterval.SignpostHistogram.HistogramValues {
+		histogramInsertQuery := "INSERT INTO app_signpost_histogram (signpost_interval_id, range_start, range_end, frequency) VALUES (?,?,?,?)"
+
+		stmt, err := tx.PreparexContext(ctx, histogramInsertQuery)
+
+		if err != nil {
+			return err
+		}
+
+		_, err = stmt.ExecContext(
+			ctx,
+			signpost.SignpostInterval.SignpostHistogram.SignpostIntervalID,
+			histogramValue.RangeStart,
+			histogramValue.RangeEnd,
+			histogramValue.Frequency,
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
