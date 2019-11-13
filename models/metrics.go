@@ -12,12 +12,17 @@ type AppLaunchTime struct {
 	MetadataID int64
 }
 
+type AppSignpostHistogram struct {
+	SignpostIntervalID int64
+	HistogramValues    []HistogramValue
+}
+
 type AppSignpostInterval struct {
 	SignpostID              int64
 	AverageMemory           float64
 	CumulativeCPUTime       float64
 	CumulativeLogicalWrites float64
-	HistogramValues         []HistogramValue
+	SignpostHistogram       AppSignpostHistogram
 }
 
 type AppSignpost struct {
