@@ -20,8 +20,9 @@ type LaunchMetricService interface {
 }
 
 type LaunchMetricServiceImpl struct {
-	db                *sqlx.DB
-	transactionHelper *database.TransactionHelper
+	db                   *sqlx.DB
+	transactionHelper    *database.TransactionHelper
+	checkMetadataService CheckMetadataService
 }
 
 func NewLaunchMetricService(db *sqlx.DB) *LaunchMetricServiceImpl {
@@ -30,11 +31,12 @@ func NewLaunchMetricService(db *sqlx.DB) *LaunchMetricServiceImpl {
 		transactionHelper: &database.TransactionHelper{
 			DB: db,
 		},
+		checkMetadataService: NewCheckMetadataService(db),
 	}
 }
 
 func (svc *LaunchMetricServiceImpl) Store(ctx context.Context, launchType LaunchType, launchTimes []*models.AppLaunchTime, metadata *models.AppMetadata) ([]int64, error) {
-	existMetadataID, err := svc.checkMetadataIfExist(ctx, metadata)
+	existMetadataID, err := svc.checkMetadataService.CheckMetadataIfExist(ctx, metadata)
 
 	if err != nil {
 		return []int64{}, err
@@ -100,35 +102,4 @@ func (svc *LaunchMetricServiceImpl) Store(ctx context.Context, launchType Launch
 	}
 
 	return ids, nil
-}
-
-func (svc *LaunchMetricServiceImpl) checkMetadataIfExist(ctx context.Context, metadata *models.AppMetadata) (int64, error) {
-	query := `SELECT id FROM metadata WHERE version = ? AND build_number = ? AND device_type = ? AND os = ?`
-
-	stmt, err := svc.db.PreparexContext(ctx, query)
-
-	if err != nil {
-		return 0, err
-	}
-
-	rows, err := stmt.QueryxContext(ctx, metadata.Version, metadata.BuildNumber, metadata.DeviceType, metadata.OSVersion)
-
-	defer rows.Close()
-
-	if err != nil {
-		return 0, err
-	}
-
-	for rows.Next() {
-		var id int64
-		err := rows.Scan(&id)
-
-		if err != nil {
-			return 0, err
-		}
-
-		return id, nil
-	}
-
-	return 0, nil // if no rows returned
 }
