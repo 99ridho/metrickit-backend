@@ -15,6 +15,7 @@ import (
 
 type Handler struct {
 	LaunchMetricService services.LaunchMetricService
+	SignpostService     services.SignpostService
 }
 
 func (h *Handler) RetrievePayload(c echo.Context) error {
@@ -54,7 +55,20 @@ func (h *Handler) RetrievePayload(c echo.Context) error {
 		ctx = context.Background()
 	}
 
-	ids, err := h.LaunchMetricService.Store(ctx, services.LaunchTypeColdStart, appLaunchMetricsFirstDrawKey, metadata)
+	coldStartMetricIDs, err := h.LaunchMetricService.Store(ctx, services.LaunchTypeColdStart, appLaunchMetricsFirstDrawKey, metadata)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, models.GenericResponse{
+			Header: &models.GenericResponseHeader{
+				Status:   "failed",
+				Messages: []string{err.Error()},
+			},
+			Error: err,
+		})
+	}
+
+	signpostMetrics := helpers.ExtractSignpostMetrics(payload)
+	signpostIDs, err := h.SignpostService.Store(ctx, signpostMetrics, metadata)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, models.GenericResponse{
@@ -71,6 +85,9 @@ func (h *Handler) RetrievePayload(c echo.Context) error {
 			Status:   "success",
 			Messages: []string{},
 		},
-		Data: ids,
+		Data: map[string]interface{}{
+			"cold_start_metric_ids": coldStartMetricIDs,
+			"signpost_metric_ids":   signpostIDs,
+		},
 	})
 }

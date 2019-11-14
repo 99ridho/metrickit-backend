@@ -24,6 +24,7 @@ func main() {
 	router := echo.New()
 	httpHandler := &handler.Handler{
 		LaunchMetricService: services.NewLaunchMetricService(database),
+		SignpostService:     services.NewSignpostService(database),
 	}
 
 	router.Use(middleware.Logger(), middleware.Recover())
