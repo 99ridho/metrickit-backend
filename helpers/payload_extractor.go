@@ -26,9 +26,10 @@ func ExtractAppLaunchMetrics(key string, payloads map[string]interface{}) []*mod
 	rawHistogramValues := histogrammedTime["histogramValue"].(map[string]interface{})
 
 	histogramValues := extractHistogramValues(rawHistogramValues)
+	histogramValuesLength := len(histogramValues)
 
 	metrics := make([]*models.AppLaunchTime, 0)
-	for i := 0; i < len(histogramValues); i++ {
+	for i := 0; i < histogramValuesLength; i++ {
 		histogramValue := histogramValues[i]
 
 		metric := &models.AppLaunchTime{
@@ -43,9 +44,10 @@ func ExtractAppLaunchMetrics(key string, payloads map[string]interface{}) []*mod
 
 func ExtractSignpostMetrics(payloads map[string]interface{}) []*models.AppSignpost {
 	signpostsData := payloads["signpostMetrics"].([]interface{})
+	signpostsDataLength := len(signpostsData)
 	signposts := make([]*models.AppSignpost, 0)
 
-	for i := 0; i < len(signpostsData); i++ {
+	for i := 0; i < signpostsDataLength; i++ {
 		rawSignpost := signpostsData[i].(map[string]interface{})
 		signpostInterval := rawSignpost["signpostIntervalData"].(map[string]interface{})
 		histogramSignpostDurations := signpostInterval["histogrammedSignpostDurations"].(map[string]interface{})
@@ -85,8 +87,9 @@ func ExtractSignpostMetrics(payloads map[string]interface{}) []*models.AppSignpo
 
 func extractHistogramValues(rawHistogramValues map[string]interface{}) []models.HistogramValue {
 	histogramValues := make([]models.HistogramValue, 0)
+	histogramLength := len(rawHistogramValues)
 
-	for i := 0; i < len(rawHistogramValues); i++ {
+	for i := 0; i < histogramLength; i++ {
 		idxStr := strconv.Itoa(i)
 		histogramValue := rawHistogramValues[idxStr].(map[string]interface{})
 
