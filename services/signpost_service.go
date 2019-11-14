@@ -9,7 +9,7 @@ import (
 )
 
 type SignpostService interface {
-	Store(ctx context.Context, signpost *models.AppSignpost, metadata *models.AppMetadata) (int64, error)
+	Store(ctx context.Context, signposts []*models.AppSignpost, metadata *models.AppMetadata) ([]int64, error)
 }
 
 type SignpostServiceImpl struct {
@@ -28,14 +28,14 @@ func NewSignpostService(db *sqlx.DB) *SignpostServiceImpl {
 	}
 }
 
-func (svc *SignpostServiceImpl) Store(ctx context.Context, signpost *models.AppSignpost, metadata *models.AppMetadata) (int64, error) {
+func (svc *SignpostServiceImpl) Store(ctx context.Context, signposts []*models.AppSignpost, metadata *models.AppMetadata) ([]int64, error) {
 	existMetadataID, err := svc.checkMetadataService.CheckMetadataIfExist(ctx, metadata)
 
 	if err != nil {
-		return 0, err
+		return []int64{}, err
 	}
 
-	var insertedSignpostID int64
+	insertedSignpostIDs := make([]int64, 0)
 
 	err = svc.transactionHelper.DoTransaction(ctx, func(tx *sqlx.Tx) error {
 		var metadataID int64
@@ -59,24 +59,26 @@ func (svc *SignpostServiceImpl) Store(ctx context.Context, signpost *models.AppS
 			metadataID, _ = result.LastInsertId()
 		}
 
-		signpost.MetadataID = metadataID
+		for _, signpost := range signposts {
+			signpost.MetadataID = metadataID
 
-		signpostID, err := svc.insertSignpost(ctx, tx, signpost)
+			signpostID, err := svc.insertSignpost(ctx, tx, signpost)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+
+			insertedSignpostIDs = append(insertedSignpostIDs, signpostID)
 		}
-
-		insertedSignpostID = signpostID
 
 		return nil
 	})
 
 	if err != nil {
-		return 0, err
+		return []int64{}, err
 	}
 
-	return insertedSignpostID, nil
+	return insertedSignpostIDs, nil
 }
 
 func (svc *SignpostServiceImpl) insertSignpost(ctx context.Context, tx *sqlx.Tx, signpost *models.AppSignpost) (int64, error) {
