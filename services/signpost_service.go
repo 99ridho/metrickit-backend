@@ -131,6 +131,8 @@ func (svc *SignpostServiceImpl) checkSignpostIfExist(ctx context.Context, signpo
 
 	rows, err := stmt.QueryxContext(ctx, signpost.MetadataID, signpost.Name, signpost.Category)
 
+	defer rows.Close()
+
 	if err != nil {
 		return 0, err
 	}
