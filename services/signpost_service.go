@@ -82,21 +82,32 @@ func (svc *SignpostServiceImpl) Store(ctx context.Context, signposts []*models.A
 }
 
 func (svc *SignpostServiceImpl) insertSignpost(ctx context.Context, tx *sqlx.Tx, signpost *models.AppSignpost) (int64, error) {
-	signpostInsertQuery := "INSERT INTO app_signpost (metadata_id, name, category) VALUES (?,?,?)"
-
-	stmt, err := tx.PreparexContext(ctx, signpostInsertQuery)
+	existingSignpostID, err := svc.checkSignpostIfExist(ctx, signpost)
 
 	if err != nil {
 		return 0, err
 	}
 
-	signpostInsertResult, err := stmt.ExecContext(ctx, signpost.MetadataID, signpost.Name, signpost.Category)
+	var signpostID int64
+	if existingSignpostID != 0 {
+		signpostID = existingSignpostID
+	} else {
+		signpostInsertQuery := "INSERT INTO app_signpost (metadata_id, name, category) VALUES (?,?,?)"
 
-	if err != nil {
-		return 0, err
+		stmt, err := tx.PreparexContext(ctx, signpostInsertQuery)
+
+		if err != nil {
+			return 0, err
+		}
+
+		signpostInsertResult, err := stmt.ExecContext(ctx, signpost.MetadataID, signpost.Name, signpost.Category)
+
+		if err != nil {
+			return 0, err
+		}
+
+		signpostID, _ = signpostInsertResult.LastInsertId()
 	}
-
-	signpostID, _ := signpostInsertResult.LastInsertId()
 
 	signpost.SignpostInterval.SignpostID = signpostID
 
@@ -107,6 +118,35 @@ func (svc *SignpostServiceImpl) insertSignpost(ctx context.Context, tx *sqlx.Tx,
 	}
 
 	return signpostID, nil
+}
+
+func (svc *SignpostServiceImpl) checkSignpostIfExist(ctx context.Context, signpost *models.AppSignpost) (int64, error) {
+	query := "SELECT id FROM app_signpost WHERE metadata_id = ? AND name = ? AND category = ?"
+
+	stmt, err := svc.db.PreparexContext(ctx, query)
+
+	if err != nil {
+		return 0, err
+	}
+
+	rows, err := stmt.QueryxContext(ctx, signpost.MetadataID, signpost.Name, signpost.Category)
+
+	if err != nil {
+		return 0, err
+	}
+
+	for rows.Next() {
+		var id int64
+		err := rows.Scan(&id)
+
+		if err != nil {
+			return 0, err
+		}
+
+		return id, nil
+	}
+
+	return 0, nil
 }
 
 func (svc *SignpostServiceImpl) insertSignpostInterval(ctx context.Context, tx *sqlx.Tx, signpost *models.AppSignpost) error {
