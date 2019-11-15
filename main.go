@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/99ridho/metrickit-backend/db"
 	"github.com/99ridho/metrickit-backend/services"
@@ -18,6 +19,13 @@ var database *sqlx.DB
 func main() {
 	loadConfigurationFile()
 	database = db.Initialize()
+
+	defer func() {
+		err := database.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	fmt.Println("Server starting...")
 
