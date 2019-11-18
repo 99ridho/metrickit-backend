@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 
-	database "github.com/99ridho/metrickit-backend/db"
-	"github.com/99ridho/metrickit-backend/models"
+	database "github.com/tokopedia/metrickit-backend/db"
+	"github.com/tokopedia/metrickit-backend/models"
 	"github.com/jmoiron/sqlx"
 )
 

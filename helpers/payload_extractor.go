@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/99ridho/metrickit-backend/models"
+	"github.com/tokopedia/metrickit-backend/models"
 )
 
 func ExtractMetadata(payload models.PayloadBody) *models.AppMetadata {
