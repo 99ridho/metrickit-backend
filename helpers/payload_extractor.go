@@ -7,25 +7,20 @@ import (
 	"github.com/99ridho/metrickit-backend/models"
 )
 
-func ExtractMetadata(payloads map[string]interface{}) *models.AppMetadata {
-	metadata := payloads["metaData"].(map[string]interface{})
-	version := payloads["appVersion"].(string)
-
+func ExtractMetadata(payload models.PayloadBody) *models.AppMetadata {
 	return &models.AppMetadata{
 		ID:          0,
-		Version:     version,
-		BuildNumber: metadata["appBuildVersion"].(string),
-		DeviceType:  metadata["deviceType"].(string),
-		OSVersion:   metadata["osVersion"].(string),
+		Version:     payload.AppVersion,
+		BuildNumber: payload.MetaData.AppBuildVersion,
+		DeviceType:  payload.MetaData.DeviceType,
+		OSVersion:   payload.MetaData.OsVersion,
 	}
 }
 
-func ExtractAppLaunchMetrics(key string, payloads map[string]interface{}) []*models.AppLaunchTime {
-	appLaunchMetrics := payloads["applicationLaunchMetrics"].(map[string]interface{})
-	histogrammedTime := appLaunchMetrics[key].(map[string]interface{})
-	rawHistogramValues := histogrammedTime["histogramValue"].(map[string]interface{})
+func ExtractAppLaunchColdStartMetrics(payload models.PayloadBody) []*models.AppLaunchTime {
+	data := payload.ApplicationLaunchMetrics.HistogrammedTimeToFirstDrawKey
 
-	histogramValues := extractHistogramValues(rawHistogramValues)
+	histogramValues := extractHistogramValues(data.Value)
 	histogramValuesLength := len(histogramValues)
 
 	metrics := make([]*models.AppLaunchTime, 0)
@@ -42,33 +37,33 @@ func ExtractAppLaunchMetrics(key string, payloads map[string]interface{}) []*mod
 	return metrics
 }
 
-func ExtractSignpostMetrics(payloads map[string]interface{}) []*models.AppSignpost {
-	signpostsData := payloads["signpostMetrics"].([]interface{})
+func ExtractSignpostMetrics(payload models.PayloadBody) []*models.AppSignpost {
+	signpostsData := payload.SignpostMetrics
+
 	signpostsDataLength := len(signpostsData)
 	signposts := make([]*models.AppSignpost, 0)
 
 	for i := 0; i < signpostsDataLength; i++ {
-		rawSignpost := signpostsData[i].(map[string]interface{})
-		signpostInterval := rawSignpost["signpostIntervalData"].(map[string]interface{})
-		histogramSignpostDurations := signpostInterval["histogrammedSignpostDurations"].(map[string]interface{})
-		rawHistogramValues := histogramSignpostDurations["histogramValue"].(map[string]interface{})
-		histogramValues := extractHistogramValues(rawHistogramValues)
+		rawSignpost := signpostsData[i]
 
-		rawAverageMemory := signpostInterval["signpostAverageMemory"].(string)
+		signpostInterval := rawSignpost.SignpostIntervalData
+		histogramValues := extractHistogramValues(rawSignpost.SignpostIntervalData.HistogrammedSignpostDurations.Value)
+
+		rawAverageMemory := signpostInterval.SignpostAverageMemory
 		averageMemoryStr, _ := filterString(rawAverageMemory, "[^0-9]+")
 		averageMemoryFloat, _ := strconv.ParseFloat(averageMemoryStr, 64)
 
-		rawCumulativeCPU := signpostInterval["signpostCumulativeCPUTime"].(string)
+		rawCumulativeCPU := signpostInterval.SignpostCumulativeCPUTime
 		cumulativeCPUStr, _ := filterString(rawCumulativeCPU, "[^0-9]+")
 		cumulativeCPUFloat, _ := strconv.ParseFloat(cumulativeCPUStr, 64)
 
-		rawCumulativeLogicalWrites := signpostInterval["signpostCumulativeLogicalWrites"].(string)
+		rawCumulativeLogicalWrites := signpostInterval.SignpostCumulativeLogicalWrites
 		cumulativeLogicalWritesStr, _ := filterString(rawCumulativeLogicalWrites, "[^0-9]+")
 		cumulativeLogicalWritesFloat, _ := strconv.ParseFloat(cumulativeLogicalWritesStr, 64)
 
 		signpost := &models.AppSignpost{
-			Name:     rawSignpost["signpostName"].(string),
-			Category: rawSignpost["signpostCategory"].(string),
+			Name:     rawSignpost.SignpostName,
+			Category: rawSignpost.SignpostCategory,
 			SignpostInterval: models.AppSignpostInterval{
 				AverageMemory:           averageMemoryFloat,
 				CumulativeCPUTime:       cumulativeCPUFloat,

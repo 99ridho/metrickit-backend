@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 
@@ -19,11 +18,11 @@ type Handler struct {
 }
 
 func (h *Handler) RetrievePayload(c echo.Context) error {
-	var payloadResult map[string]interface{}
+	var payload models.RootPayload
 
 	jsonByte, _ := ioutil.ReadAll(c.Request().Body)
 
-	err := json.Unmarshal(jsonByte, &payloadResult)
+	err := json.Unmarshal(jsonByte, &payload)
 
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, models.GenericResponse{
@@ -35,20 +34,8 @@ func (h *Handler) RetrievePayload(c echo.Context) error {
 		})
 	}
 
-	// TODO: nanti diolah
-	payload, ok := payloadResult["payloads"].(map[string]interface{})
-	if !ok {
-		return c.JSON(http.StatusBadRequest, models.GenericResponse{
-			Header: &models.GenericResponseHeader{
-				Status:   "failed",
-				Messages: []string{"Can't parse payload data"},
-			},
-			Error: errors.New("Can't parse payload data"),
-		})
-	}
-
-	metadata := helpers.ExtractMetadata(payload)
-	appLaunchMetricsFirstDrawKey := helpers.ExtractAppLaunchMetrics("histogrammedTimeToFirstDrawKey", payload)
+	metadata := helpers.ExtractMetadata(payload.Data)
+	appLaunchMetricsFirstDrawKey := helpers.ExtractAppLaunchColdStartMetrics(payload.Data)
 
 	ctx := c.Request().Context()
 	if ctx != nil {
@@ -67,7 +54,7 @@ func (h *Handler) RetrievePayload(c echo.Context) error {
 		})
 	}
 
-	signpostMetrics := helpers.ExtractSignpostMetrics(payload)
+	signpostMetrics := helpers.ExtractSignpostMetrics(payload.Data)
 	signpostIDs, err := h.SignpostService.Store(ctx, signpostMetrics, metadata)
 
 	if err != nil {
