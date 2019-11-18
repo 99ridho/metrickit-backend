@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/tokopedia/metrickit-backend/db"
-	"github.com/tokopedia/metrickit-backend/services"
+	"github.com/99ridho/metrickit-backend/db"
+	"github.com/99ridho/metrickit-backend/services"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
 
-	"github.com/tokopedia/metrickit-backend/handler"
+	"github.com/99ridho/metrickit-backend/handler"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )

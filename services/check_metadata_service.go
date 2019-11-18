@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	"github.com/tokopedia/metrickit-backend/models"
+	"github.com/99ridho/metrickit-backend/models"
 	"github.com/jmoiron/sqlx"
 )
 

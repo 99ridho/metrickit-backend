@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/tokopedia/metrickit-backend/helpers"
-	"github.com/tokopedia/metrickit-backend/models"
-	"github.com/tokopedia/metrickit-backend/services"
+	"github.com/99ridho/metrickit-backend/helpers"
+	"github.com/99ridho/metrickit-backend/models"
+	"github.com/99ridho/metrickit-backend/services"
 	"github.com/labstack/echo"
 )
 
