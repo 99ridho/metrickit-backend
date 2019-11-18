@@ -1,0 +1,10 @@
+{
+    "database": {
+      "username": "fill_username",
+      "password": "fill_password",
+      "name": "fill_name",
+      "port": "fill_port",
+      "host": "fill_host",
+      "driverName": "mysql"
+    }
+  }
