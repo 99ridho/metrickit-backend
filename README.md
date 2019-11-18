@@ -12,6 +12,6 @@ So, to be able to get insight about that metrics data, we need to display the me
 
 ## References
 
-[WWDC 2019 - Improving Battery Life and Performance](https://developer.apple.com/videos/play/wwdc2019/417/)
-[MetricKit Internals. Insights into your iOS app performance.](https://appspector.com/blog/metrickit)
-[NSHipster - MetricKit](https://nshipster.com/metrickit/)
+- [WWDC 2019 - Improving Battery Life and Performance](https://developer.apple.com/videos/play/wwdc2019/417/)
+- [MetricKit Internals. Insights into your iOS app performance.](https://appspector.com/blog/metrickit)
+- [NSHipster - MetricKit](https://nshipster.com/metrickit/)
