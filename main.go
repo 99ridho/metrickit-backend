@@ -48,8 +48,6 @@ func main() {
 
 func loadConfigurationFile() {
 	viper.SetConfigFile("config.json")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("/etc/metrickit-backend/")
 
 	err := viper.ReadInConfig()
 	if err != nil {
