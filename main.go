@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/99ridho/metrickit-backend/db"
 	"github.com/99ridho/metrickit-backend/services"
@@ -47,7 +48,19 @@ func main() {
 }
 
 func loadConfigurationFile() {
-	viper.SetConfigFile("config.json")
+	env := os.Getenv("MB_ENV")
+
+	configFileNames := map[string]string{
+		"LOCAL":  "config.json",
+		"DOCKER": "config.docker.json",
+	}
+
+	config, ok := configFileNames[env]
+	if ok {
+		viper.SetConfigFile(config)
+	} else {
+		viper.SetConfigFile("config.json")
+	}
 
 	err := viper.ReadInConfig()
 	if err != nil {
