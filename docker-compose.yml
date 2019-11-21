@@ -16,9 +16,7 @@ services:
     ports:
       - 3306:3306
     volumes: 
-      - /Users/nakama/docker-data/dbmysql/conf.d:/etc/mysql/conf.d
-      - /Users/nakama/docker-data/dbmysql/mysql-datadir:/var/lib/mysql
+      - ~/docker-data/dbmysql/conf.d:/etc/mysql/conf.d
+      - ~/docker-data/dbmysql/mysql-datadir:/var/lib/mysql
     restart: always
     image: mysql:5.7
-    environment: 
-      - MYSQL_ROOT_PASSWORD=123321
