@@ -1,0 +1,24 @@
+version: "2.3"
+services:
+  backend:
+    container_name: backend
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports: 
+      - 8185:8185
+    restart: always
+    depends_on: 
+      - dbmysql
+
+  dbmysql:
+    container_name: dbmysql
+    ports:
+      - 3306:3306
+    volumes: 
+      - /Users/nakama/docker-data/dbmysql/conf.d:/etc/mysql/conf.d
+      - /Users/nakama/docker-data/dbmysql/mysql-datadir:/var/lib/mysql
+    restart: always
+    image: mysql:5.7
+    environment: 
+      - MYSQL_ROOT_PASSWORD=123321
