@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -24,13 +25,13 @@ func Initialize() *sqlx.DB {
 	db, err := sqlx.Open(driverName, dsn)
 
 	if err != nil {
-		panic("can't connect to database")
+		log.Fatalln(err)
 	}
 
 	pingError := db.Ping()
 
 	if pingError != nil {
-		panic("database ping error")
+		log.Fatalln(err)
 	}
 
 	return db
