@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/99ridho/metrickit-backend/handler"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v4"
 )
 
 var database *sqlx.DB

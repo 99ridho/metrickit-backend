@@ -9,7 +9,7 @@ import (
 	"github.com/99ridho/metrickit-backend/helpers"
 	"github.com/99ridho/metrickit-backend/models"
 	"github.com/99ridho/metrickit-backend/services"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
