@@ -20,3 +20,12 @@ services:
       - ~/docker-data/dbmysql/mysql-datadir:/var/lib/mysql
     restart: always
     image: mysql:5.7
+
+  grafana:
+    container_name: grafana
+    ports: 
+      - 3000:3000
+    volumes:
+      - ~/docker-data/grafana:/var/lib/grafana
+    restart: always
+    image: grafana/grafana
