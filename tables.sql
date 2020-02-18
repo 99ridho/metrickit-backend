@@ -5,7 +5,7 @@ CREATE TABLE `metadata` (
   `device_type` varchar(255) NOT NULL DEFAULT '',
   `os` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `app_launch_time_first_draw` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
@@ -16,7 +16,7 @@ CREATE TABLE `app_launch_time_first_draw` (
   PRIMARY KEY (`id`),
   KEY `fk_fd_metadata_id` (`metadata_id`),
   CONSTRAINT `fk_fd_metadata_id` FOREIGN KEY (`metadata_id`) REFERENCES `metadata` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `app_launch_time_resume` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
