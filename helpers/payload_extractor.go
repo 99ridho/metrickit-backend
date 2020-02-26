@@ -37,6 +37,26 @@ func ExtractAppLaunchColdStartMetrics(payload models.PayloadBody) []*models.AppL
 	return metrics
 }
 
+func ExtractAppHangTimeMetrics(payload models.PayloadBody) []*models.AppHangTime {
+	data := payload.ApplicationResponsivenessMetrics.HistogrammedAppHangTime
+
+	histogramValues := extractHistogramValues(data.Value)
+	histogramValuesLength := len(histogramValues)
+
+	metrics := make([]*models.AppHangTime, 0)
+	for i := 0; i < histogramValuesLength; i++ {
+		histogramValue := histogramValues[i]
+
+		metric := &models.AppHangTime{
+			HistogramValue: histogramValue,
+		}
+
+		metrics = append(metrics, metric)
+	}
+
+	return metrics
+}
+
 func ExtractSignpostMetrics(payload models.PayloadBody) []*models.AppSignpost {
 	signpostsData := payload.SignpostMetrics
 

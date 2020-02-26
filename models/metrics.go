@@ -31,3 +31,8 @@ type AppSignpost struct {
 	MetadataID       int64
 	SignpostInterval AppSignpostInterval
 }
+
+type AppHangTime struct {
+	HistogramValue
+	MetadataID int64
+}

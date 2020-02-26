@@ -34,6 +34,7 @@ func main() {
 	httpHandler := &handler.Handler{
 		LaunchMetricService: services.NewLaunchMetricService(database),
 		SignpostService:     services.NewSignpostService(database),
+		HangTimeService:     services.NewHangTimeService(database),
 	}
 
 	router.Use(middleware.Logger(), middleware.Recover())
