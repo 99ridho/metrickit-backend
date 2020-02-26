@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/99ridho/metrickit-backend/handler"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 var database *sqlx.DB
@@ -48,19 +48,14 @@ func main() {
 }
 
 func loadConfigurationFile() {
-	env := os.Getenv("MB_ENV")
+	configEnv := os.Getenv("CONFIG")
 
-	configFileNames := map[string]string{
-		"LOCAL":  "config.json",
-		"DOCKER": "config.docker.json",
+	configFileName := "config.json"
+	if configEnv != "" {
+		configFileName = configEnv
 	}
 
-	config, ok := configFileNames[env]
-	if ok {
-		viper.SetConfigFile(config)
-	} else {
-		viper.SetConfigFile("config.json")
-	}
+	viper.SetConfigFile(configFileName)
 
 	err := viper.ReadInConfig()
 	if err != nil {

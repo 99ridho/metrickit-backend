@@ -13,6 +13,5 @@ RUN apk update && apk upgrade && \
 COPY --from=builder /app/mb .
 COPY --from=builder /app/config* ./
 RUN chmod +x ./mb
-ENV MB_ENV=DOCKER
 EXPOSE 8185
 CMD ["/app/mb"]
