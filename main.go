@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
+	"sync"
 
 	"github.com/99ridho/metrickit-backend/db"
 	"github.com/99ridho/metrickit-backend/services"
@@ -16,6 +16,7 @@ import (
 )
 
 var database *sqlx.DB
+var configOnce sync.Once
 
 func main() {
 	loadConfigurationFile()
@@ -49,17 +50,18 @@ func main() {
 }
 
 func loadConfigurationFile() {
-	configEnv := os.Getenv("CONFIG")
+	configOnce.Do(func() {
+		configs := []string{"/etc/metrickit-backend/config.json", "files/etc/metrickit-backend/config.json"}
 
-	configFileName := "config.json"
-	if configEnv != "" {
-		configFileName = configEnv
-	}
+		for _, config := range configs {
+			viper.SetConfigFile(config)
+			err := viper.ReadInConfig()
 
-	viper.SetConfigFile(configFileName)
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %s", err))
-	}
+			if err != nil {
+				log.Printf("fatal error config file: %s", err)
+			} else {
+				log.Printf("successfully load config from %s", config)
+			}
+		}
+	})
 }
